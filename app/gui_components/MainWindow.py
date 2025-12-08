@@ -4,6 +4,7 @@ from PySide6.QtCore import QThread, QTimer
 
 from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngine
 from translator_worker import TranslatorWorker
+from audio_worker import TTSThread
 
 class MainWindow(QMainWindow):
     def __init__(self, settings, confirmation_panel):
@@ -134,14 +135,18 @@ class MainWindow(QMainWindow):
         text = self.input_text.toPlainText().strip()
         if not text:
             return
-        self.engine.speak(text, lang = self.source_lang)
+        self.tts_thread_in = TTSThread(self.engine, text, self.source_lang)
+        self.tts_thread_in.finished.connect(lambda: setattr(self, 'tts_thread_in', None))
+        self.tts_thread_in.start()
 
     # play output voice
     def play_output(self):
         text = self.output_text.toPlainText().strip()
         if not text:
             return
-        self.engine.speak(text, lang = self.target_lang)
+        self.tts_thread_out = TTSThread(self.engine, text, self.target_lang)
+        self.tts_thread_out.finished.connect(lambda: setattr(self, 'tts_thread_out', None))
+        self.tts_thread_out.start()
 
     # update output text and furigana panels
     def update_ui(self, result):
@@ -256,8 +261,5 @@ class MainWindow(QMainWindow):
 # to do:
 # - make settings useful
 # - make modes
-# - audio glitches
 # - icon
 # - exe app
-# - requirements
-# - good reposiotry
