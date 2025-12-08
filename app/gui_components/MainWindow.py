@@ -1,14 +1,14 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton
 from PySide6.QtGui import QColor, QPalette, QFont
 from PySide6.QtCore import QThread, QTimer
-from translator import GoogleTranslatorEngine
+from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngine
 from translator_worker import TranslatorWorker
 
 class MainWindow(QMainWindow):
     def __init__(self, settings):
         super().__init__()
         self.settings = settings
-        self.engine = GoogleTranslatorEngine()
+        self.engine = OfficialGoogleTranslatorEngine()
         
         self.central = QWidget()
         self.setCentralWidget(self.central)
@@ -153,25 +153,16 @@ class MainWindow(QMainWindow):
             self.btn_reverse.setText("Swap Languages (JA => EN)")
             self.input_text.setPlaceholderText("Enter Japanese text...")
         
-        input_content = self.input_text.toPlainText()
-        output_content = self.output_text.toPlainText()
-
+        new_input = self.output_text.toPlainText()
         self.input_text.blockSignals(True)
-        self.output_text.blockSignals(True)
-
-        self.input_text.setPlainText(output_content)
-        self.output_text.setPlainText(input_content)
-
+        self.input_text.setPlainText(new_input)
         self.input_text.blockSignals(False)
-        self.output_text.blockSignals(False)
 
-        self.debounce_timer.stop()
-        
-        # stop any existing translation thread
-        if self.current_thread is not None and self.current_thread.isRunning():
-            self.current_thread.quit()
-            self.current_thread.wait()
-            self.current_thread = None # force stop current thread
+        # Clear the old output
+        self.output_text.clear()
+
+        # Trigger translation manually after swap
+        self.start_translation_thread()
 
     # asynchronous translation
     def start_translation_thread(self):
@@ -221,3 +212,10 @@ class MainWindow(QMainWindow):
         sender_thread = self.sender()
         if sender_thread is self.current_thread:
             self.current_thread = None
+
+# to do:
+# - make furigana follow japanese
+
+# - do not open a screenshot, instantly pass is to model, result of model pass to clipboard, and paste to japanese language field
+# - use confirmation panel
+# - make settings useful

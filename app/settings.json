@@ -1,5 +1,6 @@
 {
     "online_mode": true,
+    "official_online": true,
     "confirmation_panel_enabled": true,
     "confirmation_panel_original": true,
     "confirmation_panel_furigana": true,
