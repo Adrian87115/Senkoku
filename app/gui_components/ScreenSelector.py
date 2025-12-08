@@ -2,7 +2,6 @@ import keyboard
 import mss
 from PIL import Image
 import numpy as np
-
 from PySide6.QtWidgets import QApplication, QWidget
 from PySide6.QtGui import QPainter, QColor, QPen, QGuiApplication, QImage
 from PySide6.QtCore import Qt, QRect, Signal, QObject
@@ -30,6 +29,10 @@ class ScreenSelector(QWidget):
         # register global hotkey
         keyboard.add_hotkey(self.hotkey, self._hotkey_pressed)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.cancel_selection()
+
     def _hotkey_pressed(self):
         self.bridge.trigger.emit()
     
@@ -55,6 +58,10 @@ class ScreenSelector(QWidget):
             painter.drawRect(QRect(self.start, self.end))
 
     def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            self.cancel_selection()
+            return
+
         self.start = event.pos()
         self.end = self.start
         self.update()
@@ -106,3 +113,9 @@ class ScreenSelector(QWidget):
         qimg = QImage(arr.data, w, h, bytes_per_line, QImage.Format_RGB888)
         clipboard = QGuiApplication.clipboard()
         clipboard.setImage(qimg)
+
+    def cancel_selection(self):
+        self.start = None
+        self.end = None
+        self.hide()
+        self.close()

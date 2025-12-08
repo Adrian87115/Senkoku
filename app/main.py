@@ -1,7 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication # type: ignore
-import sounddevice as sd # type: ignore
-import keyboard
+from PySide6.QtCore import Qt
 
 from gui_components.MainWindow import MainWindow
 from gui_components.ConfirmationPanel import ConfirmationPanel, ClickOutsideFilter
@@ -15,20 +14,17 @@ def main():
     print("Local mode offers moderate experience, Users are encouraged to use online mode when possible.")
     # tts_engine = KokoroEngine(voice = "jf_alpha", lang = "ja")
     ocr_engine = MangaOCREngine()
+   
     settings = AppSettings()
     app = QApplication(sys.argv)
-    window = MainWindow(settings)
+
+    panel = ConfirmationPanel()
+    panel.setWindowFlags(Qt.Popup)
+    window = MainWindow(settings, panel)
     window.show()
-    # panel = ConfirmationPanel()
 
-    # panel.show()
-
-    # filter = ClickOutsideFilter(panel)
-    # app.installEventFilter(filter)
-
-    # panel.update_text(original = "こんにちは",
-    #                     reading = "kon'nichiwa",
-    #                     translation = "Hello")
+    filter = ClickOutsideFilter(panel)
+    app.installEventFilter(filter)
 
     screen_selector = ScreenSelector(callback = lambda img: on_image_captured(img, window, ocr_engine), app = app)
     sys.exit(app.exec())

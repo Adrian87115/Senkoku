@@ -7,6 +7,7 @@ def on_image_captured(img, window, ocr_engine):
     if window.source_lang != "ja":
         window.swap_languages()
 
+    window.from_screen_selector = True
     clipboard = QGuiApplication.clipboard()
     clipboard.setText(text)
     window.input_text.blockSignals(True) # avoid triggering debounce

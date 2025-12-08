@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel # type: 
 from PySide6.QtCore import Qt, QObject, QEvent # type: ignore
 from PySide6.QtWidgets import QApplication # type: ignore
 
+# confirmation panel is treated as popup, but without this class it will not close when pressed inside MainWindow
 class ClickOutsideFilter(QObject):
     def __init__(self, panel):
         super().__init__()
@@ -14,11 +15,13 @@ class ClickOutsideFilter(QObject):
         return False
 
 class ConfirmationPanel(QMainWindow):
-    def __init__(self, disable_reading=False, disable_translation=False):
+    def __init__(self, disable_reading=False, disable_translation = False):
         super().__init__()
 
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_OpaquePaintEvent, True) # <-- Add this
+        self.setAttribute(Qt.WA_NoSystemBackground, True)
 
         screen_geometry = QApplication.primaryScreen().geometry()
         self.setGeometry(100, 100, 400, 200)
@@ -51,12 +54,12 @@ class ConfirmationPanel(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self._drag_active = True
-            self._drag_position = event.globalPosition() - self.frameGeometry().topLeft()
+            self._drag_position = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseMoveEvent(self, event):
         if self._drag_active and event.buttons() == Qt.LeftButton:
-            self.move((event.globalPosition() - self._drag_position).toPoint())
+            self.move(event.globalPos() - self._drag_position)
             event.accept()
 
     def mouseReleaseEvent(self, event):

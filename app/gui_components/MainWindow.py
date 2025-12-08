@@ -6,11 +6,15 @@ from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngin
 from translator_worker import TranslatorWorker
 
 class MainWindow(QMainWindow):
-    def __init__(self, settings):
+    def __init__(self, settings, confirmation_panel):
         super().__init__()
         self.settings = settings
+        self.from_screen_selector = False
+
         self.engine = OfficialGoogleTranslatorEngine()
         
+        self.confirmation_panel = confirmation_panel
+
         self.central = QWidget()
         self.setCentralWidget(self.central)
         self.layout = QVBoxLayout(self.central)
@@ -25,8 +29,6 @@ class MainWindow(QMainWindow):
         self.target_lang = "en"
         self.current_thread = None
 
-        self.confirmation_panel = ConfirmationPanel(disable_reading=False, disable_translation=False)
-        self.confirmation_panel.hide()
 
         self.debounce_timer = QTimer()
         self.debounce_timer.setSingleShot(True)
@@ -50,7 +52,7 @@ class MainWindow(QMainWindow):
         # font of labels
         label_font = QFont()
         label_font.setFamily("Arial")
-        label_font.setPointSize(14)
+        label_font.setPointSize(16)
         label_font.setBold(True)
 
         # font of buttons
@@ -117,9 +119,9 @@ class MainWindow(QMainWindow):
         style_box = """QTextEdit {background-color: #2F2F2F;
                                   color: white;
                                   border: 1px solid #555;
-                                  font-size: 13pt;}
+                                  font-size: 16pt;}
                        QTextEdit[placeholderText]:empty {color: #888888;
-                                                         font-size: 13pt;}"""
+                                                         font-size: 16pt;}"""
         self.input_text.setStyleSheet(style_box)
         self.output_text.setStyleSheet(style_box)
         self.furigana_text_in.setStyleSheet(style_box)
@@ -143,6 +145,13 @@ class MainWindow(QMainWindow):
 
     # update output text and furigana panels
     def update_ui(self, result):
+        if not result.strip():
+            self.output_text.clear()
+            self.confirmation_panel.hide()
+            self.furigana_text_in.clear()
+            self.furigana_text_out.clear()
+            return
+
         self.output_text.setPlainText(result)
         input_text = self.input_text.toPlainText().strip()
 
@@ -157,6 +166,13 @@ class MainWindow(QMainWindow):
             self.furigana_text_out.setPlainText(furigana_out)
         else:
             self.furigana_text_out.clear()
+
+        if self.from_screen_selector:
+            self.confirmation_panel.update_text(original = input_text, reading = furigana_in, translation = result)
+            self.confirmation_panel.show()
+            self.from_screen_selector = False
+        else:
+            self.confirmation_panel.hide()
 
     # language swap
     def swap_languages(self):
@@ -189,6 +205,10 @@ class MainWindow(QMainWindow):
         text = self.input_text.toPlainText().strip()
         if not text:
             self.output_text.clear()
+            self.furigana_text_in.clear()
+            self.furigana_text_out.clear()
+            self.furigana_text_out.clear()
+            self.confirmation_panel.hide()
             return
 
         # stop and clean up any running previous thread, only when there is one
@@ -234,11 +254,9 @@ class MainWindow(QMainWindow):
             self.current_thread = None
 
 # to do:
-# - crashes
-# - prevent from pasting empty
-# - use confirmation panel
 # - make settings useful
 # - make modes
+# - audio glitches
 # - icon
 # - exe app
 # - requirements

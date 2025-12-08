@@ -1,0 +1,15 @@
+PySide6
+keyboard
+mss
+Pillow
+numpy
+manga_ocr
+transformers
+googletrans==4.0.0rc1
+pykakasi
+gTTS
+sounddevice
+soundfile
+google-cloud-texttospeech  # Assuming "kokoro_tts" is a wrapper for a service like this
+google-oauth2
+kokoro-tts
