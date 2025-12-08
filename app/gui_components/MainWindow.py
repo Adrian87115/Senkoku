@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton, QSizePolicy
-from PySide6.QtGui import QColor, QPalette, QFont
+from PySide6.QtGui import QColor, QPalette, QFont, QIcon
 from PySide6.QtCore import QThread, QTimer
 
 from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngine
@@ -21,6 +21,7 @@ class MainWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central)
 
         self.setWindowTitle("Senkoku")
+        self.setWindowIcon(QIcon("../icon.png"))
         self.setGeometry(600, 100, 500, 450)
         self.setup_theme()
         self.setup_layout()
@@ -260,6 +261,6 @@ class MainWindow(QMainWindow):
 
 # to do:
 # - make settings useful
+# - add slider button to disable confirmation panel
 # - make modes
-# - icon
 # - exe app
