@@ -1,6 +1,7 @@
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton, QSizePolicy
 from PySide6.QtGui import QColor, QPalette, QFont
 from PySide6.QtCore import QThread, QTimer
+
 from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngine
 from translator_worker import TranslatorWorker
 
@@ -24,9 +25,12 @@ class MainWindow(QMainWindow):
         self.target_lang = "en"
         self.current_thread = None
 
+        self.confirmation_panel = ConfirmationPanel(disable_reading=False, disable_translation=False)
+        self.confirmation_panel.hide()
+
         self.debounce_timer = QTimer()
         self.debounce_timer.setSingleShot(True)
-        self.debounce_timer.setInterval(100)
+        self.debounce_timer.setInterval(300)
         self.debounce_timer.timeout.connect(self.start_translation_thread)
         self.input_text.textChanged.connect(self.debounce_timer.start)
 
@@ -58,25 +62,28 @@ class MainWindow(QMainWindow):
         self.label_in = QLabel("Japanese:")
         self.label_in.setFont(label_font)
         self.input_text = QTextEdit()
-        self.input_text.setFixedHeight(150)
+        self.input_text.setMinimumHeight(120)
+        self.input_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.input_text.setPlaceholderText("Enter Japanese text...")
-
-        # it must follow japanese, also user should be able to disable it
-        # furigana
-        self.furigana_text_in = QTextEdit()
-        self.furigana_text_in.setReadOnly(True)
-        self.furigana_text_in.setFixedHeight(50)
-
-        self.furigana_text_out = QTextEdit()
-        self.furigana_text_out.setReadOnly(True)
-        self.furigana_text_out.setFixedHeight(50)
 
         # out
         self.label_out = QLabel("English:")
         self.label_out.setFont(label_font)
         self.output_text = QTextEdit()
         self.output_text.setReadOnly(True)
-        self.output_text.setFixedHeight(150)
+        self.output_text.setMinimumHeight(120)
+        self.output_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # furigana
+        self.furigana_text_in = QTextEdit()
+        self.furigana_text_in.setReadOnly(True)
+        self.furigana_text_in.setMinimumHeight(50)
+        self.furigana_text_in.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.furigana_text_out = QTextEdit()
+        self.furigana_text_out.setReadOnly(True)
+        self.furigana_text_out.setMinimumHeight(50)
+        self.furigana_text_out.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         
         # swap languages button
         self.btn_reverse = QPushButton("Swap Languages (JA => EN)")
@@ -95,13 +102,13 @@ class MainWindow(QMainWindow):
         
         # layout
         self.layout.addWidget(self.label_in)
-        self.layout.addWidget(self.input_text)
-        self.layout.addWidget(self.furigana_text_in)
+        self.layout.addWidget(self.input_text, stretch = 3)
+        self.layout.addWidget(self.furigana_text_in, stretch = 1.25)
         self.layout.addWidget(self.btn_play_in)
         self.layout.addWidget(self.btn_reverse)
         self.layout.addWidget(self.label_out)
-        self.layout.addWidget(self.output_text)
-        self.layout.addWidget(self.furigana_text_out)
+        self.layout.addWidget(self.output_text, stretch = 3)
+        self.layout.addWidget(self.furigana_text_out, stretch = 1.25)
         self.layout.addWidget(self.btn_play_out)
 
     # app widgets
@@ -134,9 +141,22 @@ class MainWindow(QMainWindow):
             return
         self.engine.speak(text, lang = self.target_lang)
 
-    # update output text
+    # update output text and furigana panels
     def update_ui(self, result):
         self.output_text.setPlainText(result)
+        input_text = self.input_text.toPlainText().strip()
+
+        if self.source_lang == "ja":
+            furigana_in = self.engine.get_furigana(input_text)
+            self.furigana_text_in.setPlainText(furigana_in)
+        else:
+            self.furigana_text_in.clear()
+
+        if self.target_lang == "ja":
+            furigana_out = self.engine.get_furigana(result)
+            self.furigana_text_out.setPlainText(furigana_out)
+        else:
+            self.furigana_text_out.clear()
 
     # language swap
     def swap_languages(self):
@@ -214,8 +234,12 @@ class MainWindow(QMainWindow):
             self.current_thread = None
 
 # to do:
-# - make furigana follow japanese
-
-# - do not open a screenshot, instantly pass is to model, result of model pass to clipboard, and paste to japanese language field
+# - crashes
+# - prevent from pasting empty
 # - use confirmation panel
 # - make settings useful
+# - make modes
+# - icon
+# - exe app
+# - requirements
+# - good reposiotry

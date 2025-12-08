@@ -5,6 +5,6 @@
     "confirmation_panel_original": true,
     "confirmation_panel_furigana": true,
     "confirmation_panel_translation": true,
-    "furigana_enabled": true,
-    "screen_selector_sc": "ctrl+q"
+    "screen_selector_sc": "ctrl+q",
+    "furigana_enabled": true
 }

@@ -30,8 +30,10 @@ class FreeGoogleTranslatorEngine:
         output = []
         japanese_regex = re.compile(r'[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]+')
         pos = 0
+
         for match in japanese_regex.finditer(text):
             start, end = match.span()
+
             if start > pos:
                 non_jap = text[pos:start]
                 output.append(f" {non_jap} " if not non_jap.isspace() else non_jap)
@@ -40,9 +42,11 @@ class FreeGoogleTranslatorEngine:
             reading = " ".join([w['hepburn'] if romanize else w['reading'] for w in converted])
             output.append(reading)
             pos = end
+
         if pos < len(text):
             non_jap = text[pos:]
             output.append(f" {non_jap} " if not non_jap.isspace() else non_jap)
+
         return re.sub(r'\s+', ' ', "".join(output)).strip()
 
     def speak(self, text, lang = 'ja'):
@@ -80,6 +84,7 @@ class OfficialGoogleTranslatorEngine:
 
         for match in japanese_regex.finditer(text):
             start, end = match.span()
+            
             if start > pos:
                 output.append(text[pos:start])
             japanese_chunk = text[start:end]

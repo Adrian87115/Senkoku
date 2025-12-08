@@ -7,14 +7,14 @@ from gui_components.MainWindow import MainWindow
 from gui_components.ConfirmationPanel import ConfirmationPanel, ClickOutsideFilter
 from ai.kokoro_engine import KokoroEngine
 from ai.manga_ocr_engine import MangaOCREngine
-from gui_components.ScreenSelector import ScreenSelector, on_image_captured
+from gui_components.ScreenSelector import ScreenSelector
 from app_settings import AppSettings
+from utils import on_image_captured
 
 def main():
     print("Local mode offers moderate experience, Users are encouraged to use online mode when possible.")
     # tts_engine = KokoroEngine(voice = "jf_alpha", lang = "ja")
-    # ocr_engine = MangaOCREngine()
-    # translator_engine = GoogleTranslatorEngine()
+    ocr_engine = MangaOCREngine()
     settings = AppSettings()
     app = QApplication(sys.argv)
     window = MainWindow(settings)
@@ -30,11 +30,7 @@ def main():
     #                     reading = "kon'nichiwa",
     #                     translation = "Hello")
 
-    selector = ScreenSelector(hotkey = settings.screen_selector_sc, callback = on_image_captured, app =  app)
-
-    # print("Ready. Press Ctrl+Q to capture screen region.")
-
-    # keyboard.wait()
+    screen_selector = ScreenSelector(callback = lambda img: on_image_captured(img, window, ocr_engine), app = app)
     sys.exit(app.exec())
 
 if __name__ == "__main__":
