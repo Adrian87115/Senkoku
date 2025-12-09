@@ -3,16 +3,14 @@ import os
 
 class AppSettings:
     DEFAULT_SETTINGS = {"online_mode": True,
+                        "official_online": False,
 
                         # confirmation panel
                         "confirmation_panel_enabled": True,
                         "confirmation_panel_original": True,
                         "confirmation_panel_furigana": True,
                         "confirmation_panel_translation": True,
-
-                        # furigana in main window
-                        "furigana_enabled": True,
-
+                        
                         # shortcut of screen selector
                         "screen_selector_sc": "ctrl+q"}
 

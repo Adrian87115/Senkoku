@@ -5,6 +5,7 @@ from PySide6.QtCore import QThread, QTimer
 from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngine
 from translator_worker import TranslatorWorker
 from audio_worker import TTSThread
+from ai.translator_engine import LocalTranslatorEngine
 
 class MainWindow(QMainWindow):
     def __init__(self, settings, confirmation_panel):
@@ -12,9 +13,18 @@ class MainWindow(QMainWindow):
         self.settings = settings
         self.from_screen_selector = False
 
-        self.engine = OfficialGoogleTranslatorEngine()
-        
-        self.confirmation_panel = confirmation_panel
+        if self.settings.online_mode:
+            if self.settings.official_online:
+                self.translation_engine = OfficialGoogleTranslatorEngine()
+            else:
+                self.translation_engine = FreeGoogleTranslatorEngine()
+        else:
+            self.translation_engine = LocalTranslatorEngine()
+
+        if self.settings.confirmation_panel_enabled:
+                self.confirmation_panel = confirmation_panel
+        else:
+            self.confirmation_panel = None
 
         self.central = QWidget()
         self.setCentralWidget(self.central)
@@ -30,7 +40,6 @@ class MainWindow(QMainWindow):
         self.source_lang = "ja"
         self.target_lang = "en"
         self.current_thread = None
-
 
         self.debounce_timer = QTimer()
         self.debounce_timer.setSingleShot(True)
@@ -136,7 +145,7 @@ class MainWindow(QMainWindow):
         text = self.input_text.toPlainText().strip()
         if not text:
             return
-        self.tts_thread_in = TTSThread(self.engine, text, self.source_lang)
+        self.tts_thread_in = TTSThread(self.translation_engine, text, self.source_lang)
         self.tts_thread_in.finished.connect(lambda: setattr(self, 'tts_thread_in', None))
         self.tts_thread_in.start()
 
@@ -145,7 +154,7 @@ class MainWindow(QMainWindow):
         text = self.output_text.toPlainText().strip()
         if not text:
             return
-        self.tts_thread_out = TTSThread(self.engine, text, self.target_lang)
+        self.tts_thread_out = TTSThread(self.translation_engine, text, self.target_lang)
         self.tts_thread_out.finished.connect(lambda: setattr(self, 'tts_thread_out', None))
         self.tts_thread_out.start()
 
@@ -153,32 +162,38 @@ class MainWindow(QMainWindow):
     def update_ui(self, result):
         if not result.strip():
             self.output_text.clear()
-            self.confirmation_panel.hide()
+
+            if self.settings.confirmation_panel_enabled:
+                self.confirmation_panel.hide()
+
             self.furigana_text_in.clear()
             self.furigana_text_out.clear()
             return
 
         self.output_text.setPlainText(result)
         input_text = self.input_text.toPlainText().strip()
+        furigana_in = ""
 
         if self.source_lang == "ja":
-            furigana_in = self.engine.get_furigana(input_text)
+            furigana_in = self.translation_engine.get_furigana(input_text)
             self.furigana_text_in.setPlainText(furigana_in)
         else:
             self.furigana_text_in.clear()
 
         if self.target_lang == "ja":
-            furigana_out = self.engine.get_furigana(result)
+            furigana_out = self.translation_engine.get_furigana(result)
             self.furigana_text_out.setPlainText(furigana_out)
         else:
             self.furigana_text_out.clear()
 
         if self.from_screen_selector:
-            self.confirmation_panel.update_text(original = input_text, reading = furigana_in, translation = result)
-            self.confirmation_panel.show()
+            if self.settings.confirmation_panel_enabled:
+                self.confirmation_panel.update_text(original = input_text, reading = furigana_in, translation = result)
+                self.confirmation_panel.show()
             self.from_screen_selector = False
         else:
-            self.confirmation_panel.hide()
+            if self.settings.confirmation_panel_enabled:
+                self.confirmation_panel.hide()
 
     # language swap
     def swap_languages(self):
@@ -214,7 +229,8 @@ class MainWindow(QMainWindow):
             self.furigana_text_in.clear()
             self.furigana_text_out.clear()
             self.furigana_text_out.clear()
-            self.confirmation_panel.hide()
+            if self.settings.confirmation_panel_enabled:
+                self.confirmation_panel.hide()
             return
 
         # stop and clean up any running previous thread, only when there is one
@@ -223,7 +239,7 @@ class MainWindow(QMainWindow):
             self.current_thread.wait() # wait for the thread to stop
 
         # create worker and thread
-        self.worker = TranslatorWorker(text, self.source_lang, self.target_lang, self.engine, self.settings.online_mode)
+        self.worker = TranslatorWorker(text, self.source_lang, self.target_lang, self.translation_engine, self.settings.online_mode)
         thread = QThread()
         
         # store the new thread reference
@@ -260,7 +276,10 @@ class MainWindow(QMainWindow):
             self.current_thread = None
 
 # to do:
+
 # - make settings useful
 # - add slider button to disable confirmation panel
 # - make modes
 # - exe app
+
+# - audio glitches are back(only with headphones)

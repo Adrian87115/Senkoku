@@ -23,7 +23,10 @@ class TranslatorWorker(QObject):
                 else:
                     res = self.engine.en_to_ja(self.text)
             else:
-                res = "[OFFLINE] Mode enabled."
+                if self.src == "ja" and self.tgt == "en":
+                    res = self.engine.ja_to_en(self.text)
+                elif self.src == "en" and self.tgt == "ja":
+                    res = self.engine.en_to_ja(self.text)
         except Exception as e:
             res = f"Error: {e}"
         

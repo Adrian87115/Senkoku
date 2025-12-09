@@ -10,9 +10,10 @@ class HotkeyBridge(QObject):
     trigger = Signal()
 
 class ScreenSelector(QWidget):
-    def __init__(self, hotkey = "ctrl+q", callback = None, app: QApplication = None):
+    def __init__(self, settings, callback = None, app: QApplication = None):
         super().__init__()
-        self.hotkey = hotkey
+        self.settings = settings
+        self.hotkey = self.settings.screen_selector_sc
         self.callback = callback
         self.app = app or QApplication.instance()
 

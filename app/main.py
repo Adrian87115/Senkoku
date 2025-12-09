@@ -10,20 +10,16 @@ from ai.manga_ocr_engine import MangaOCREngine
 from gui_components.ScreenSelector import ScreenSelector
 from app_settings import AppSettings
 from utils import on_image_captured
-import os
 
 
 def main():
     print("Local mode offers moderate experience, Users are encouraged to use online mode when possible.")
-    # tts_engine = KokoroEngine(voice = "jf_alpha", lang = "ja")
     ocr_engine = MangaOCREngine()
    
     settings = AppSettings()
     app = QApplication(sys.argv)
-    # app_icon = QIcon("C:/Users/adria/Desktop/Adrian/projects/Python/Senkoku/icon.png")
-    # app.setWindowIcon(app_icon)
 
-    panel = ConfirmationPanel()
+    panel = ConfirmationPanel(settings)
     panel.setWindowFlags(Qt.Popup)
     window = MainWindow(settings, panel)
     window.show()
@@ -31,8 +27,10 @@ def main():
     filter = ClickOutsideFilter(panel)
     app.installEventFilter(filter)
 
-    screen_selector = ScreenSelector(callback = lambda img: on_image_captured(img, window, ocr_engine), app = app)
+    screen_selector = ScreenSelector(settings, callback = lambda img: on_image_captured(img, window, ocr_engine), app = app)
     sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()
+
+# The app will not work properly in power saver mode

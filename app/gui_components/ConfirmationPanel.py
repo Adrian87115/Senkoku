@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel # type: ignore
-from PySide6.QtCore import Qt, QObject, QEvent # type: ignore
-from PySide6.QtWidgets import QApplication # type: ignore
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel
+from PySide6.QtCore import Qt, QObject, QEvent
+from PySide6.QtWidgets import QApplication
 
 # confirmation panel is treated as popup, but without this class it will not close when pressed inside MainWindow
 class ClickOutsideFilter(QObject):
@@ -15,12 +15,13 @@ class ClickOutsideFilter(QObject):
         return False
 
 class ConfirmationPanel(QMainWindow):
-    def __init__(self, disable_reading=False, disable_translation = False):
+    def __init__(self, settings, disable_reading = False, disable_translation = False):
         super().__init__()
+        self.settings = settings 
 
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setAttribute(Qt.WA_OpaquePaintEvent, True) # <-- Add this
+        self.setAttribute(Qt.WA_OpaquePaintEvent, True)
         self.setAttribute(Qt.WA_NoSystemBackground, True)
 
         screen_geometry = QApplication.primaryScreen().geometry()
@@ -50,7 +51,6 @@ class ConfirmationPanel(QMainWindow):
         self._drag_active = False
         self._drag_position = None
 
-    # Dragging
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self._drag_active = True
@@ -65,8 +65,7 @@ class ConfirmationPanel(QMainWindow):
     def mouseReleaseEvent(self, event):
         self._drag_active = False
 
-    # Update text
-    def update_text(self, original="", reading="", translation=""):
+    def update_text(self, original = "", reading = "", translation = ""):
         self.original_label.setText(f"Original: {original}")
         self.reading_label.setText(f"Reading: {reading}")
         self.translation_label.setText(f"Translation: {translation}")
