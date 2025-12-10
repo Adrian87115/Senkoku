@@ -1,19 +1,15 @@
 import sys
-from PySide6.QtWidgets import QApplication # type: ignore
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
 
 from gui_components.MainWindow import MainWindow
 from gui_components.ConfirmationPanel import ConfirmationPanel, ClickOutsideFilter
-from ai.kokoro_engine import KokoroEngine
-from ai.manga_ocr_engine import MangaOCREngine
+from manga_ocr_engine import MangaOCREngine
 from gui_components.ScreenSelector import ScreenSelector
 from app_settings import AppSettings
 from utils import on_image_captured
 
-
 def main():
-    print("Local mode offers moderate experience, Users are encouraged to use online mode when possible.")
     ocr_engine = MangaOCREngine()
    
     settings = AppSettings()
@@ -34,3 +30,9 @@ if __name__ == "__main__":
     main()
 
 # The app will not work properly in power saver mode
+
+# to do:
+# - exe app
+# - better furigana
+# - sometimes audio crashes
+# - settings panel is supposed to close with the app and not save visually unsaved changes

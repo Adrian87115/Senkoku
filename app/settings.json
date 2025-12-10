@@ -1,9 +1,5 @@
 {
-    "online_mode": false,
-    "official_online": false,
+    "official_online": true,
     "confirmation_panel_enabled": true,
-    "confirmation_panel_original": true,
-    "confirmation_panel_furigana": true,
-    "confirmation_panel_translation": true,
     "screen_selector_sc": "ctrl+q"
 }

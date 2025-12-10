@@ -40,8 +40,10 @@ class ConfirmationPanel(QMainWindow):
             label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         layout.addWidget(self.original_label)
+
         if not disable_reading:
             layout.addWidget(self.reading_label)
+
         if not disable_translation:
             layout.addWidget(self.translation_label)
 

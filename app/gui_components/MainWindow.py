@@ -1,11 +1,10 @@
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton, QSizePolicy
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton, QSizePolicy, QHBoxLayout
 from PySide6.QtGui import QColor, QPalette, QFont, QIcon
-from PySide6.QtCore import QThread, QTimer
-
+from PySide6.QtCore import QThread, QTimer, Qt
 from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngine
 from translator_worker import TranslatorWorker
 from audio_worker import TTSThread
-from ai.translator_engine import LocalTranslatorEngine
+from gui_components.SettingsPanel import SettingsPanel
 
 class MainWindow(QMainWindow):
     def __init__(self, settings, confirmation_panel):
@@ -13,13 +12,10 @@ class MainWindow(QMainWindow):
         self.settings = settings
         self.from_screen_selector = False
 
-        if self.settings.online_mode:
-            if self.settings.official_online:
-                self.translation_engine = OfficialGoogleTranslatorEngine()
-            else:
-                self.translation_engine = FreeGoogleTranslatorEngine()
+        if self.settings.official_online:
+            self.translation_engine = OfficialGoogleTranslatorEngine()
         else:
-            self.translation_engine = LocalTranslatorEngine()
+            self.translation_engine = FreeGoogleTranslatorEngine()
 
         if self.settings.confirmation_panel_enabled:
                 self.confirmation_panel = confirmation_panel
@@ -37,9 +33,13 @@ class MainWindow(QMainWindow):
         self.setup_layout()
         self.setup_widgets()
 
+        self.settings_panel = SettingsPanel(self.settings)
+
         self.source_lang = "ja"
         self.target_lang = "en"
         self.current_thread = None
+
+        self.tts_busy = False
 
         self.debounce_timer = QTimer()
         self.debounce_timer.setSingleShot(True)
@@ -71,9 +71,29 @@ class MainWindow(QMainWindow):
         button_font.setFamily("Arial")
         button_font.setPointSize(10)
 
+        title_row = QHBoxLayout()
+
         # in
         self.label_in = QLabel("Japanese:")
         self.label_in.setFont(label_font)
+
+        title_row.addWidget(self.label_in, alignment = Qt.AlignVCenter)
+        title_row.addStretch()
+        self.btn_settings = QPushButton("⚙")
+        self.btn_settings.setFixedSize(32, 32)
+        self.btn_settings.setToolTip("Settings")
+        self.btn_settings.clicked.connect(self.open_settings_panel)
+        self.btn_settings.setStyleSheet("""QPushButton {background-color: #444;
+                                                        border: 1px solid #666;
+                                                        border-radius: 6px;
+                                                        font-size: 16px;
+                                                        color: white;}
+                                           QPushButton:hover {background-color: #555;}""")
+
+        title_row.addWidget(self.btn_settings)
+
+        self.layout.addLayout(title_row)
+
         self.input_text = QTextEdit()
         self.input_text.setMinimumHeight(120)
         self.input_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -142,21 +162,36 @@ class MainWindow(QMainWindow):
 
     # play input voice
     def play_input(self):
-        text = self.input_text.toPlainText().strip()
-        if not text:
-            return
-        self.tts_thread_in = TTSThread(self.translation_engine, text, self.source_lang)
-        self.tts_thread_in.finished.connect(lambda: setattr(self, 'tts_thread_in', None))
-        self.tts_thread_in.start()
+        self.play_tts(text = self.input_text.toPlainText().strip(), lang = self.source_lang, attr_name = "tts_thread_in")
 
     # play output voice
     def play_output(self):
-        text = self.output_text.toPlainText().strip()
+        self.play_tts(text = self.output_text.toPlainText().strip(), lang = self.target_lang, attr_name = "tts_thread_out")
+
+    def play_tts(self, text, lang, attr_name):
         if not text:
             return
-        self.tts_thread_out = TTSThread(self.translation_engine, text, self.target_lang)
-        self.tts_thread_out.finished.connect(lambda: setattr(self, 'tts_thread_out', None))
-        self.tts_thread_out.start()
+
+        # prevent any simultaneous playback
+        if self.tts_busy:
+            return
+
+        self.tts_busy = True
+        thread = getattr(self, attr_name, None)
+
+        if thread is not None and thread.isRunning():
+            self.tts_busy = False
+            return
+
+        new_thread = TTSThread(self.translation_engine, text, lang)
+        setattr(self, attr_name, new_thread)
+
+        def cleanup():
+            setattr(self, attr_name, None)
+            self.tts_busy = False
+
+        new_thread.finished.connect(cleanup)
+        new_thread.start()
 
     # update output text and furigana panels
     def update_ui(self, result):
@@ -239,7 +274,7 @@ class MainWindow(QMainWindow):
             self.current_thread.wait() # wait for the thread to stop
 
         # create worker and thread
-        self.worker = TranslatorWorker(text, self.source_lang, self.target_lang, self.translation_engine, self.settings.online_mode)
+        self.worker = TranslatorWorker(text, self.source_lang, self.target_lang, self.translation_engine)
         thread = QThread()
         
         # store the new thread reference
@@ -266,6 +301,10 @@ class MainWindow(QMainWindow):
         if self.current_thread and self.current_thread.isRunning():
             self.current_thread.quit()
             self.current_thread.wait()
+
+        if hasattr(self, "settings_panel") and self.settings_panel is not None:
+            self.settings_panel.close()
+
         super().closeEvent(event)
 
     # called when the thread finishes and safely clears the reference
@@ -275,11 +314,8 @@ class MainWindow(QMainWindow):
         if sender_thread is self.current_thread:
             self.current_thread = None
 
-# to do:
-
-# - make settings useful
-# - add slider button to disable confirmation panel
-# - make modes
-# - exe app
-
-# - audio glitches are back(only with headphones)
+    def open_settings_panel(self):
+        self.settings_panel.refresh_from_settings()
+        self.settings_panel.show()
+        self.settings_panel.raise_()
+        self.settings_panel.activateWindow()
