@@ -1,11 +1,24 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QCheckBox, QLineEdit, QApplication, QPushButton
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QCheckBox, QLineEdit, QPushButton
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QKeyEvent # Needed for type hinting keyPressEvent
+from PySide6.QtGui import QKeyEvent
 
 class SettingsPanel(QWidget):
+    VALID_QT_IDENTIFIERS = set()
+    for name in dir(Qt.Key):
+        if name.startswith('Key_'):
+            VALID_QT_IDENTIFIERS.add(name.lstrip('Key_').upper())
+
+    for name in ["CTRL", "SHIFT", "ALT", "META"]:
+        VALID_QT_IDENTIFIERS.add(name)
+
+    for name in dir(Qt.KeyboardModifier):
+        if name.endswith('Modifier'):
+            VALID_QT_IDENTIFIERS.add(name.removesuffix('Modifier').upper())
+
     def __init__(self, settings):
         super().__init__(None, Qt.Window | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
         self.settings = settings
+        self.temp_settings = settings._data.copy()
         self.setWindowTitle("Settings")
         self.setFixedSize(QSize(300, 160))
 
@@ -13,28 +26,24 @@ class SettingsPanel(QWidget):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(10)
 
-        # --- Toggles ---
-        # Store references to checkboxes
         self.checkbox_official_online = QCheckBox()
-        self.checkbox_official_online.setChecked(settings.official_online)
+        self.checkbox_official_online.setChecked(self.temp_settings["official_online"])
         self.checkbox_official_online.stateChanged.connect(lambda s: self._update("official_online", bool(s)))
         layout.addLayout(self._toggle("Official Online", self.checkbox_official_online))
 
         self.checkbox_confirmation_panel = QCheckBox()
-        self.checkbox_confirmation_panel.setChecked(settings.confirmation_panel_enabled)
+        self.checkbox_confirmation_panel.setChecked(self.temp_settings["confirmation_panel_enabled"])
         self.checkbox_confirmation_panel.stateChanged.connect(lambda s: self._update("confirmation_panel_enabled", bool(s)))
         layout.addLayout(self._toggle("Confirmation Panel", self.checkbox_confirmation_panel))
 
-        # --- Hotkey Input ---
         shortcut_layout = QHBoxLayout()
         shortcut_layout.addWidget(QLabel("Screen selector hotkey:"))
-        self.lineedit_screen_selector = QLineEdit(settings.screen_selector_sc)
+        self.lineedit_screen_selector = QLineEdit(self.temp_settings["screen_selector_sc"])
         self.lineedit_screen_selector.textChanged.connect(lambda text: self._update("screen_selector_sc", text))
         shortcut_layout.addWidget(self.lineedit_screen_selector)
         layout.addLayout(shortcut_layout)
         layout.addStretch()
 
-        # --- Button Row ---
         self.btn_cancel = QPushButton("Cancel")
         self.btn_cancel.clicked.connect(self.close)
 
@@ -47,33 +56,45 @@ class SettingsPanel(QWidget):
         btn_row.addWidget(self.btn_accept)
         layout.addLayout(btn_row)
 
-    def _toggle(self, label: str, checkbox: QCheckBox):
+    def _toggle(self, label, checkbox):
         layout = QHBoxLayout()
         layout.addWidget(QLabel(label))
         layout.addStretch()
         layout.addWidget(checkbox)
         return layout
 
+    def _validate_shortcut(self, shortcut_text):
+        if not shortcut_text:
+            return True
+            
+        parts = shortcut_text.upper().split('+')
+        
+        for part in parts:
+            part = part.strip()
+            if not part in self.VALID_QT_IDENTIFIERS:
+                return False
+        
+        return True
+
     def _update(self, key, value):
         if key == "screen_selector_sc":
-            valid_keys = {k.name for k in Qt.Key.__members__.values()}
-            if value not in valid_keys:
-                return
-        
-        setattr(self.settings, key, value)
+            if not self._validate_shortcut(value):
+                return 
+
+        self.temp_settings[key] = value
 
     def save_and_close(self):
-        self.settings.save()
+        for key, value in self.temp_settings.items():
+            setattr(self.settings, key, value)
         self.close()
 
     def refresh_from_settings(self):
-        """Update all widgets to match the current saved settings"""
-        self.checkbox_official_online.setChecked(self.settings.official_online)
-        self.checkbox_confirmation_panel.setChecked(self.settings.confirmation_panel_enabled)
-        self.lineedit_screen_selector.setText(self.settings.screen_selector_sc)
+        self.temp_settings = self.settings._data.copy()
+        self.checkbox_official_online.setChecked(self.temp_settings["official_online"])
+        self.checkbox_confirmation_panel.setChecked(self.temp_settings["confirmation_panel_enabled"])
+        self.lineedit_screen_selector.setText(self.temp_settings["screen_selector_sc"])
 
-    # Escape key closes the panel like cancel
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:
             self.close()
         super().keyPressEvent(event)

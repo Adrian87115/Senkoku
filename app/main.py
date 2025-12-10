@@ -29,10 +29,16 @@ def main():
 if __name__ == "__main__":
     main()
 
-# The app will not work properly in power saver mode
+# The app will not work properly in power saving mode
+# After changing translator or shortcut, restart the app
 
 # to do:
 # - exe app
 # - better furigana
-# - sometimes audio crashes
-# - settings panel is supposed to close with the app and not save visually unsaved changes
+# - make settings icon be next to in label
+
+# if turned on after initially it was off it will crash
+# Traceback (most recent call last):
+#   File "C:\Users\adria\Desktop\Adrian\projects\Python\Senkoku\app\gui_components\MainWindow.py", line 226, in update_ui
+#     self.confirmation_panel.update_text(original = input_text, reading = furigana_in, translation = result)
+# AttributeError: 'NoneType' object has no attribute 'update_text'

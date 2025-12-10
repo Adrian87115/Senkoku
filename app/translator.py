@@ -9,14 +9,15 @@ import os
 from google.cloud import translate_v2 as translate
 from google.oauth2 import service_account
 import html
+import numpy as np
 
 # free version
 class FreeGoogleTranslatorEngine:
     def __init__(self):
-        print("Initializing Google Translator Engine...")
+        print("Initializing Free Translator Engine...")
         self.translator = Translator()
         self.kks = pykakasi.kakasi()
-        print("Google Translator Engine ready.\n")
+        print("Free Translator Engine ready.\n")
 
     def ja_to_en(self, text):
         result = self.translator.translate(text, src = 'ja', dest = 'en')
@@ -104,5 +105,12 @@ class OfficialGoogleTranslatorEngine:
         tts.write_to_fp(mp3_fp)
         mp3_fp.seek(0)
         data, samplerate = sf.read(mp3_fp, dtype = 'float32')
-        sd.play(data, samplerate)
+
+        # prevents audio glitches on headphones
+        silence_duration = 0.2
+        num_silent_samples = int(silence_duration * samplerate)
+        silence = np.zeros((num_silent_samples, data.shape[1])) if data.ndim > 1 else np.zeros(num_silent_samples)
+        data_with_silence = np.concatenate((data, silence))
+
+        sd.play(data_with_silence, samplerate)
         sd.wait()
