@@ -1,12 +1,14 @@
 from manga_ocr import MangaOcr
 import re
 from PIL import Image
-import numpy as np
 
 class MangaOCREngine():
     def __init__(self):
         print("Loading Manga OCR model...")
         self.manga_ocr = MangaOcr()
+
+        # model must run on cpu, or it may crash on some devices when they are not plugged in or are in power saving mode
+        self.manga_ocr.model.to("cpu")
         print("Manga OCR initialized.\n")
         
     def read_from_image(self, img):
@@ -23,8 +25,8 @@ class MangaOCREngine():
     
     # prevent crashing
     def _is_valid_image(self, img):
-        # accidental click with shape 1x1
-        if img.size == (1, 1):
+        # prevents channel ambiguity
+        if img.size[0] <= 3 or img.size[1] <= 3:
             return False
         
         # RGB and non empty

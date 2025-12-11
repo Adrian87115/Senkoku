@@ -107,16 +107,16 @@ class MainWindow(QMainWindow):
         self.output_text.setMinimumHeight(120)
         self.output_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        # furigana
-        self.furigana_text_in = QTextEdit()
-        self.furigana_text_in.setReadOnly(True)
-        self.furigana_text_in.setMinimumHeight(50)
-        self.furigana_text_in.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # romaji
+        self.romaji_text_in = QTextEdit()
+        self.romaji_text_in.setReadOnly(True)
+        self.romaji_text_in.setMinimumHeight(50)
+        self.romaji_text_in.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.furigana_text_out = QTextEdit()
-        self.furigana_text_out.setReadOnly(True)
-        self.furigana_text_out.setMinimumHeight(50)
-        self.furigana_text_out.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.romaji_text_out = QTextEdit()
+        self.romaji_text_out.setReadOnly(True)
+        self.romaji_text_out.setMinimumHeight(50)
+        self.romaji_text_out.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         
         # swap languages button
         self.btn_reverse = QPushButton("Swap Languages (JA => EN)")
@@ -136,12 +136,12 @@ class MainWindow(QMainWindow):
         # layout
         self.layout.addWidget(self.label_in)
         self.layout.addWidget(self.input_text, stretch = 3)
-        self.layout.addWidget(self.furigana_text_in, stretch = 1.25)
+        self.layout.addWidget(self.romaji_text_in, stretch = 1.25)
         self.layout.addWidget(self.btn_play_in)
         self.layout.addWidget(self.btn_reverse)
         self.layout.addWidget(self.label_out)
         self.layout.addWidget(self.output_text, stretch = 3)
-        self.layout.addWidget(self.furigana_text_out, stretch = 1.25)
+        self.layout.addWidget(self.romaji_text_out, stretch = 1.25)
         self.layout.addWidget(self.btn_play_out)
 
     # app widgets
@@ -155,8 +155,8 @@ class MainWindow(QMainWindow):
                                                          font-size: 16pt;}"""
         self.input_text.setStyleSheet(style_box)
         self.output_text.setStyleSheet(style_box)
-        self.furigana_text_in.setStyleSheet(style_box)
-        self.furigana_text_out.setStyleSheet(style_box)
+        self.romaji_text_in.setStyleSheet(style_box)
+        self.romaji_text_out.setStyleSheet(style_box)
         self.label_in.setStyleSheet("color: white; font-weight: bold;")
         self.label_out.setStyleSheet("color: white; font-weight: bold;")
 
@@ -193,7 +193,7 @@ class MainWindow(QMainWindow):
         new_thread.finished.connect(cleanup)
         new_thread.start()
 
-    # update output text and furigana panels
+    # update output text and romaji panels
     def update_ui(self, result):
         if not result.strip():
             self.output_text.clear()
@@ -201,29 +201,29 @@ class MainWindow(QMainWindow):
             if self.settings.confirmation_panel_enabled:
                 self.confirmation_panel.hide()
 
-            self.furigana_text_in.clear()
-            self.furigana_text_out.clear()
+            self.romaji_text_in.clear()
+            self.romaji_text_out.clear()
             return
 
         self.output_text.setPlainText(result)
         input_text = self.input_text.toPlainText().strip()
-        furigana_in = ""
+        romaji_in = ""
 
         if self.source_lang == "ja":
-            furigana_in = self.translation_engine.get_furigana(input_text)
-            self.furigana_text_in.setPlainText(furigana_in)
+            romaji_in = self.translation_engine.get_romaji(input_text)
+            self.romaji_text_in.setPlainText(romaji_in)
         else:
-            self.furigana_text_in.clear()
+            self.romaji_text_in.clear()
 
         if self.target_lang == "ja":
-            furigana_out = self.translation_engine.get_furigana(result)
-            self.furigana_text_out.setPlainText(furigana_out)
+            romaji_out = self.translation_engine.get_romaji(result)
+            self.romaji_text_out.setPlainText(romaji_out)
         else:
-            self.furigana_text_out.clear()
+            self.romaji_text_out.clear()
 
         if self.from_screen_selector:
             if self.settings.confirmation_panel_enabled:
-                self.confirmation_panel.update_text(original = input_text, reading = furigana_in, translation = result)
+                self.confirmation_panel.update_text(original = input_text, reading = romaji_in, translation = result)
                 self.confirmation_panel.show()
             self.from_screen_selector = False
         else:
@@ -261,9 +261,9 @@ class MainWindow(QMainWindow):
         text = self.input_text.toPlainText().strip()
         if not text:
             self.output_text.clear()
-            self.furigana_text_in.clear()
-            self.furigana_text_out.clear()
-            self.furigana_text_out.clear()
+            self.romaji_text_in.clear()
+            self.romaji_text_out.clear()
+            self.romaji_text_out.clear()
             if self.settings.confirmation_panel_enabled:
                 self.confirmation_panel.hide()
             return

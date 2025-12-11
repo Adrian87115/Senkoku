@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QCheckBox, QLineEdit, QPushButton
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QCheckBox, QLineEdit, QPushButton, QMessageBox
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QKeyEvent
 
@@ -86,6 +86,13 @@ class SettingsPanel(QWidget):
     def save_and_close(self):
         for key, value in self.temp_settings.items():
             setattr(self.settings, key, value)
+
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Restart Required")
+        msg_box.setText("Settings saved. Please restart the application for changes to take effect. Application may not work properly.")
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec()
         self.close()
 
     def refresh_from_settings(self):
