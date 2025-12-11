@@ -4,7 +4,6 @@ from gtts import gTTS
 import sounddevice as sd
 import soundfile as sf
 import io
-import re
 import os
 from google.cloud import translate_v2 as translate
 from google.oauth2 import service_account
@@ -56,7 +55,7 @@ class OfficialGoogleTranslatorEngine(BaseTranslatorEngine):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         key_path = os.path.abspath(os.path.join(current_dir, "..", "senkoku_api_key.json"))
         credentials = service_account.Credentials.from_service_account_file(key_path)
-        self.translate_client = translate.Client(credentials=credentials)
+        self.translate_client = translate.Client(credentials = credentials)
         print("Official Google Translator Engine ready.\n")
 
     def ja_to_en(self, text):

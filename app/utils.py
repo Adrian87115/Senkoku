@@ -1,6 +1,5 @@
 from PySide6.QtGui import QGuiApplication
 import re
-import fugashi
 import pykakasi
 
 # processing captured image
@@ -18,7 +17,13 @@ def on_image_captured(img, window, ocr_engine):
     window.input_text.blockSignals(False)
     window.start_translation_thread()
 
-tagger = fugashi.Tagger()
+from sudachipy import dictionary, tokenizer as sudachi_tokenizer
+import re
+import pykakasi
+
+# Initialize
+tokenizer_obj = dictionary.Dictionary().create()
+mode = sudachi_tokenizer.Tokenizer.SplitMode.C
 kks = pykakasi.kakasi()
 
 MACRONS = {"ou": "ō",
@@ -32,6 +37,10 @@ PUNCT_MAP = {"。": ".",
              "、": ",",
              "！": "!",
              "？": "?",
+             "「": "\"",
+             "」": "\"",
+             "『": "\"",
+             "』": "\"",
              ".": ".",
              ",": ",",
              "!": "!",
@@ -40,21 +49,7 @@ PUNCT_MAP = {"。": ".",
 def apply_macrons(s):
     for src, tgt in MACRONS.items():
         s = s.replace(src, tgt)
-
     return s
-
-# prevent None
-def token_pronunciation(features, token_surface):
-    if not features or token_surface is None:
-        return ""
-    
-    if len(features) > 8 and features[8] not in ("", "*", None):
-        return features[8]
-    
-    if len(features) > 7 and features[7] not in ("", "*", None):
-        return features[7]
-
-    return token_surface or ""
 
 def is_punctuation(surface):
     return surface in PUNCT_MAP
@@ -63,31 +58,63 @@ def capitalize_sentence_starts(text):
     text = re.sub(r"^[a-z]", lambda m: m.group().upper(), text)
     text = re.sub(r"([.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
     text = re.sub(r"([\(\[\{]\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
+    text = re.sub(r"([\"“”『』]\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
     return text
 
+SOKUON_PLACEHOLDER = "¤"  # rarely used ASCII character
+
+# sokuon is treated as tsu, so it has to be preserved
+def mark_sokuon(text):
+    new_text = ""
+    for char in text:
+        if char in ("っ", "ッ"):
+            new_text += SOKUON_PLACEHOLDER
+        else:
+            new_text += char
+    return new_text
+
+# since sokuon is treated as tsu we must manually make it work as it is meant to
+def apply_sokuon_doubling(romaji):
+    result = ""
+    i = 0
+    while i < len(romaji):
+        if romaji[i] == SOKUON_PLACEHOLDER and i + 1 < len(romaji):
+
+            next_char = romaji[i + 2]
+            if result.endswith(" "):
+                result = result[:-1]
+            result += next_char
+
+            i += 1
+        else:
+            result += romaji[i]
+        i += 1
+
+    return result
+
 def get_romaji(text):
+    text = mark_sokuon(text)
     romaji_parts = []
 
-    for token in tagger(text):
-        features = token.feature
-        pron = token_pronunciation(features, token.surface)
-        if not pron:
-            continue
+    for token in tokenizer_obj.tokenize(text, mode):
+        surface = token.surface()
 
-        conv = kks.convert(pron or "")
-        romaji = "".join(entry["hepburn"] for entry in conv)
-
-        if not romaji:
-            continue
-
-        if is_punctuation(token.surface):
-            mapped = PUNCT_MAP[token.surface]
+        if surface in PUNCT_MAP:
             if romaji_parts:
                 romaji_parts[-1] = romaji_parts[-1].rstrip()
-                romaji_parts.append(mapped)
-            else:
-                romaji_parts.append(mapped)
-        else:
+            romaji_parts.append(PUNCT_MAP[surface])
+            continue
+
+        pron = token.reading_form() or surface
+
+        if all((ord(c) < 128 or c == SOKUON_PLACEHOLDER) for c in surface):
+            romaji_parts.append(surface)
+            continue
+
+        conv = kks.convert(pron)
+        romaji = "".join(entry["hepburn"] for entry in conv)
+
+        if romaji:
             romaji_parts.append(romaji)
 
     romaji = " ".join(romaji_parts)
@@ -95,5 +122,5 @@ def get_romaji(text):
     romaji = re.sub(r"\s+", " ", romaji).strip()
     romaji = apply_macrons(romaji)
     romaji = capitalize_sentence_starts(romaji)
-
+    romaji = apply_sokuon_doubling(romaji)
     return romaji
