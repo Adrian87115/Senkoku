@@ -125,14 +125,17 @@ def get_romaji(text):
     romaji = apply_sokuon_doubling(romaji)
     return romaji
 
-def create_desktop_shortcut(path_to_exe):
+def create_desktop_shortcut(path_to_exe, icon_path):
     desktop = winshell.desktop()
     shortcut_path = os.path.join(desktop, "Senkoku.lnk")
-    icon_path = "C:/Users/adria/Desktop/Adrian/projects/Python/Senkoku/app/dist/Senkoku/icon.ico"
     icon_location = f"{icon_path},0"
 
     if not os.path.isfile(path_to_exe):
         print(f"Executable file not found: {path_to_exe}")
+        return
+    
+    if not os.path.isfile(icon_path):
+        print(f"Executable file not found: {icon_path}")
         return
 
     shell = Dispatch('WScript.Shell')
@@ -142,5 +145,3 @@ def create_desktop_shortcut(path_to_exe):
     shortcut.IconLocation = icon_location 
     shortcut.save()
     print("Desktop shortcut created!")
-
-create_desktop_shortcut("C:/Users/adria/Desktop/Adrian/projects/Python/Senkoku/app/dist/Senkoku/Senkoku.exe")

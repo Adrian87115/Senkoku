@@ -1,5 +1,5 @@
 {
-    "official_online": true,
+    "official_online": false,
     "confirmation_panel_enabled": false,
     "screen_selector_sc": "ctrl+q"
 }

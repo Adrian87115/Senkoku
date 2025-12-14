@@ -10,8 +10,10 @@ gTTS
 sounddevice
 soundfile
 google-cloud-texttospeech
-google-oauth2
+google-cloud-translate
+google-oauth
 sudachipy
+sudachidict_core
 winshell
 pywin32
 pyinstaller

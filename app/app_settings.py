@@ -34,6 +34,11 @@ class AppSettings:
         with open(self.path, "w", encoding = "utf-8") as f:
             json.dump(self._data, f, indent = 4, ensure_ascii = False)
 
+    # prevents soft lock when user does not have api key for google cloud
+    def disable_official_online(self):
+        self._data["official_online"] = False
+        self.save()
+
     def __getattr__(self, item):
         return self._data.get(item)
 
