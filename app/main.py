@@ -28,3 +28,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# users must provide api file on their own
+
+# pyinstaller Senkoku.spec to run

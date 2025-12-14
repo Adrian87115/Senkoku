@@ -4,7 +4,6 @@ mss
 Pillow
 numpy
 manga_ocr
-transformers
 googletrans==4.0.0rc1
 pykakasi
 gTTS
@@ -12,3 +11,7 @@ sounddevice
 soundfile
 google-cloud-texttospeech
 google-oauth2
+sudachipy
+winshell
+pywin32
+pyinstaller

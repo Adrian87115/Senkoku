@@ -1,6 +1,10 @@
 from PySide6.QtGui import QGuiApplication
 import re
 import pykakasi
+from sudachipy import dictionary, tokenizer as sudachi_tokenizer
+import os
+import winshell
+from win32com.client import Dispatch
 
 # processing captured image
 def on_image_captured(img, window, ocr_engine):
@@ -16,10 +20,6 @@ def on_image_captured(img, window, ocr_engine):
     window.input_text.setPlainText(text)
     window.input_text.blockSignals(False)
     window.start_translation_thread()
-
-from sudachipy import dictionary, tokenizer as sudachi_tokenizer
-import re
-import pykakasi
 
 # Initialize
 tokenizer_obj = dictionary.Dictionary().create()
@@ -124,3 +124,23 @@ def get_romaji(text):
     romaji = capitalize_sentence_starts(romaji)
     romaji = apply_sokuon_doubling(romaji)
     return romaji
+
+def create_desktop_shortcut(path_to_exe):
+    desktop = winshell.desktop()
+    shortcut_path = os.path.join(desktop, "Senkoku.lnk")
+    icon_path = "C:/Users/adria/Desktop/Adrian/projects/Python/Senkoku/app/dist/Senkoku/icon.ico"
+    icon_location = f"{icon_path},0"
+
+    if not os.path.isfile(path_to_exe):
+        print(f"Executable file not found: {path_to_exe}")
+        return
+
+    shell = Dispatch('WScript.Shell')
+    shortcut = shell.CreateShortcut(shortcut_path)
+    shortcut.Targetpath = path_to_exe
+    shortcut.WorkingDirectory = os.path.dirname(path_to_exe)
+    shortcut.IconLocation = icon_location 
+    shortcut.save()
+    print("Desktop shortcut created!")
+
+create_desktop_shortcut("C:/Users/adria/Desktop/Adrian/projects/Python/Senkoku/app/dist/Senkoku/Senkoku.exe")

@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central)
 
         self.setWindowTitle("Senkoku")
-        self.setWindowIcon(QIcon("../icon.png"))
+        self.setWindowIcon(QIcon("icon.ico"))
         self.setGeometry(600, 100, 500, 450)
         self.setup_theme()
         self.setup_layout()

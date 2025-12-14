@@ -1,38 +1,54 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+
+block_cipher = None
+
+# Automatically collect all necessary data files
+datas = (collect_data_files("pykakasi") +
+        collect_data_files("unidic_lite") + 
+         collect_data_files("manga_ocr") +
+    [
+        ('../senkoku_api_key.json', '.'),
+        ('settings.json', '.'),
+        ('../icon.ico', '.')
+    ]
+)
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=['./app'],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=datas,
     hookspath=[],
-    hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    noarchive=False,
-    optimize=0,
+    cipher=block_cipher,
 )
-pyz = PYZ(a.pure)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='Senkoku',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
     console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
+    icon='../icon.ico'
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    name='Senkoku'
 )
