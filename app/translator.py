@@ -53,10 +53,19 @@ class OfficialGoogleTranslatorEngine(BaseTranslatorEngine):
         print("Initializing Official Google Cloud Translator Engine...")
         super().__init__()
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        key_path = os.path.abspath(os.path.join(current_dir, "..", "senkoku_api_key.json"))
-        credentials = service_account.Credentials.from_service_account_file(key_path)
-        self.translate_client = translate.Client(credentials = credentials)
+        self.key_path = os.path.abspath(os.path.join(current_dir, "..", "senkoku_api_key.json"))
+        self.reconnect()
         print("Official Google Translator Engine ready.\n")
+
+    # after iddleness for some time the api will disconnect, this funciton is meant to reestablish the connection
+    def reconnect(self):
+        try:
+            credentials = service_account.Credentials.from_service_account_file(self.key_path)
+            self.translate_client = translate.Client(credentials = credentials)
+            print("Google Cloud Connection Refreshed.")
+        except Exception as e:
+            print(f"Failed to connect to Google Cloud: {e}")
+            raise e
 
     def ja_to_en(self, text):
         raw_translation = self.translate_client.translate(text, source_language = 'ja', target_language = 'en')['translatedText']

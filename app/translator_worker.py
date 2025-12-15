@@ -15,9 +15,29 @@ class TranslatorWorker(QObject):
             self.finished.emit("")
             return
 
+        try:
+            res = self._perform_translation()
+            self.finished.emit(res)
+
+        except Exception as e:
+            print(f"Translation failed (likely idle timeout): {e}")
+            print("Attempting to reconnect...")
+
+            try:
+                if hasattr(self.engine, 'reconnect'):
+                    self.engine.reconnect()
+                    res = self._perform_translation()
+                    self.finished.emit(res)
+                else:
+                    self.finished.emit(f"Error: {e}")
+
+            except Exception as final_error:
+                self.finished.emit(f"Translation Error: {final_error}")
+
+    def _perform_translation(self):
         if self.src == "ja" and self.tgt == "en":
-            res = self.engine.ja_to_en(self.text)
+            return self.engine.ja_to_en(self.text)
         elif self.src == "en" and self.tgt == "ja":
-            res = self.engine.en_to_ja(self.text)
+            return self.engine.en_to_ja(self.text)
         
-        self.finished.emit(res)
+        return ""
