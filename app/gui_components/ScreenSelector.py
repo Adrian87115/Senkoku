@@ -4,7 +4,9 @@ from PIL import Image
 import numpy as np
 from PySide6.QtWidgets import QApplication, QWidget
 from PySide6.QtGui import QPainter, QColor, QPen, QGuiApplication, QImage
-from PySide6.QtCore import Qt, QRect, Signal, QObject
+from PySide6.QtCore import Qt, QRect, Signal, QObject, QTimer 
+
+from logger import log_exceptions
 
 class HotkeyBridge(QObject):
     trigger = Signal()
@@ -37,6 +39,7 @@ class ScreenSelector(QWidget):
     def _hotkey_pressed(self):
         self.bridge.trigger.emit()
     
+    @log_exceptions
     def start_selection(self):
         self._prepare_overlay()
         self.show()
@@ -71,6 +74,7 @@ class ScreenSelector(QWidget):
         self.end = event.pos()
         self.update()
 
+    @log_exceptions
     def mouseReleaseEvent(self, event):
         self.end = event.pos()
         self.update()
@@ -95,18 +99,21 @@ class ScreenSelector(QWidget):
         self.close() 
         self.copy_to_clipboard(img)
 
+        # solves random crash
         if self.callback:
-            self.callback(img)
+            QTimer.singleShot(0, lambda: self.callback(img))
 
         self.start = None
         self.end = None
 
+    @log_exceptions
     def capture_rect(self, rect):
         with mss.mss() as sct:
             grab = sct.grab(rect)
 
         return Image.frombytes("RGB", grab.size, grab.rgb)
 
+    @log_exceptions
     def copy_to_clipboard(self, pil_img):
         arr = np.array(pil_img)
         h, w, ch = arr.shape

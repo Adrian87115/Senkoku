@@ -2,6 +2,8 @@ from manga_ocr import MangaOcr
 import re
 from PIL import Image
 
+from logger import log_exceptions
+
 class MangaOCREngine():
     def __init__(self):
         print("Loading Manga OCR model...")
@@ -10,7 +12,8 @@ class MangaOCREngine():
         # model must run on cpu, or it may crash on some devices when they are not plugged in or are in power saving mode
         self.manga_ocr.model.to("cpu")
         print("Manga OCR initialized.\n")
-        
+    
+    @log_exceptions
     def read_from_image(self, img):
         if not self._is_valid_image(img):
             return ""

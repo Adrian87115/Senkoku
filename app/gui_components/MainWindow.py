@@ -1,10 +1,12 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton, QSizePolicy, QHBoxLayout
 from PySide6.QtGui import QColor, QPalette, QFont, QIcon
 from PySide6.QtCore import QThread, QTimer, Qt
+
 from translator import FreeGoogleTranslatorEngine, OfficialGoogleTranslatorEngine
 from translator_worker import TranslatorWorker
 from audio_worker import TTSThread
 from gui_components.SettingsPanel import SettingsPanel
+from logger import log_exceptions
 
 class MainWindow(QMainWindow):
     def __init__(self, settings, confirmation_panel):
@@ -37,8 +39,9 @@ class MainWindow(QMainWindow):
 
         self.source_lang = "ja"
         self.target_lang = "en"
-        self.current_thread = None
-
+        
+        self.current_worker = None
+        self._active_threads = []
         self.tts_busy = False
 
         self.debounce_timer = QTimer()
@@ -168,6 +171,7 @@ class MainWindow(QMainWindow):
     def play_output(self):
         self.play_tts(text = self.output_text.toPlainText().strip(), lang = self.target_lang, attr_name = "tts_thread_out")
 
+    @log_exceptions
     def play_tts(self, text, lang, attr_name):
         if not text:
             return
@@ -177,20 +181,17 @@ class MainWindow(QMainWindow):
             return
 
         self.tts_busy = True
-        thread = getattr(self, attr_name, None)
-
-        if thread is not None and thread.isRunning():
-            self.tts_busy = False
-            return
-
+        
         new_thread = TTSThread(self.translation_engine, text, lang)
         setattr(self, attr_name, new_thread)
 
         def cleanup():
-            setattr(self, attr_name, None)
             self.tts_busy = False
 
         new_thread.finished.connect(cleanup)
+        new_thread.finished.connect(new_thread.deleteLater)
+        self._active_threads.append(new_thread)
+        new_thread.finished.connect(lambda: self.cleanup_thread_ref(new_thread))
         new_thread.start()
 
     # update output text and romaji panels
@@ -250,69 +251,59 @@ class MainWindow(QMainWindow):
         self.input_text.setPlainText(new_input)
         self.input_text.blockSignals(False)
 
-        # Clear the old output
+        # clear the old output
         self.output_text.clear()
 
-        # Trigger translation manually after swap
+        # trigger translation manually after swap
         self.start_translation_thread()
 
     # asynchronous translation
+    @log_exceptions
     def start_translation_thread(self):
         text = self.input_text.toPlainText().strip()
         if not text:
-            self.output_text.clear()
-            self.romaji_text_in.clear()
-            self.romaji_text_out.clear()
-            self.romaji_text_out.clear()
-            if self.settings.confirmation_panel_enabled:
-                self.confirmation_panel.hide()
+            self.update_ui("")
             return
 
-        # stop and clean up any running previous thread, only when there is one
-        if self.current_thread is not None and self.current_thread.isRunning():
-            self.current_thread.quit()
-            self.current_thread.wait() # wait for the thread to stop
+        if self.current_worker:
+            try:
+                self.current_worker.finished.disconnect(self.update_ui)
+            except Exception:
+                pass
 
-        # create worker and thread
-        self.worker = TranslatorWorker(text, self.source_lang, self.target_lang, self.translation_engine)
+        worker = TranslatorWorker(text, self.source_lang, self.target_lang, self.translation_engine)
         thread = QThread()
-        
-        # store the new thread reference
-        self.current_thread = thread 
-        
-        self.worker.moveToThread(thread)
-        
-        # connect signal
-        thread.started.connect(self.worker.run)
-        
-        # clean up worker and thread when done
-        self.worker.finished.connect(self.update_ui)
-        self.worker.finished.connect(thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        
-        # clean
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.finished.connect(self.update_ui)
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
         thread.finished.connect(thread.deleteLater)
-        thread.finished.connect(self.cleanup_thread)
 
+        # store the thread in a list so it is not garbage collect while it is still running
+        self._active_threads.append(thread)
+
+        # when the thread truly finishes, remove it from the list
+        thread.finished.connect(lambda t = thread: self.cleanup_thread_ref(t))
+        self.current_worker = worker
         thread.start()
+
+    @log_exceptions
+    def cleanup_thread_ref(self, thread):
+        if thread in self._active_threads:
+            self._active_threads.remove(thread)
 
     # stop threads when closing app
     def closeEvent(self, event):
-        if self.current_thread and self.current_thread.isRunning():
-            self.current_thread.quit()
-            self.current_thread.wait()
-
+        for thread in self._active_threads:
+            if thread.isRunning():
+                thread.quit()
+                thread.wait()
+        
         if hasattr(self, "settings_panel") and self.settings_panel is not None:
             self.settings_panel.close()
 
         super().closeEvent(event)
-
-    # called when the thread finishes and safely clears the reference
-    # prevents clearing the reference if another thread finishes unexpectedly
-    def cleanup_thread(self):
-        sender_thread = self.sender()
-        if sender_thread is self.current_thread:
-            self.current_thread = None
 
     def open_settings_panel(self):
         self.settings_panel.refresh_from_settings()

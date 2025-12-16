@@ -6,7 +6,10 @@ import os
 import winshell
 from win32com.client import Dispatch
 
+from logger import log_exceptions
+
 # processing captured image
+@log_exceptions
 def on_image_captured(img, window, ocr_engine):
     text = ocr_engine.read_from_image(img)
 
@@ -55,10 +58,10 @@ def is_punctuation(surface):
     return surface in PUNCT_MAP
 
 def capitalize_sentence_starts(text):
-    text = re.sub(r"^[a-z]", lambda m: m.group().upper(), text)
-    text = re.sub(r"([.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
-    text = re.sub(r"([\(\[\{]\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
-    text = re.sub(r"([\"“”『』]\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
+    text = re.sub(r"^\s*([a-zA-Z\u0080-\U0010FFFF])", lambda m: m.group(1).upper(), text)
+    text = re.sub(r"([.!?]\s+)([a-zA-Z\u0080-\U0010FFFF])", lambda m: m.group(1) + m.group(2).upper(), text)
+    text = re.sub(r"([\(\[\{]\s*)([a-zA-Z\u0080-\U0010FFFF])", lambda m: m.group(1) + m.group(2).upper(), text)
+    text = re.sub(r"([\"“”『』]\s*)([a-zA-Z\u0080-\U0010FFFF])", lambda m: m.group(1) + m.group(2).upper(), text)
     return text
 
 SOKUON_PLACEHOLDER = "¤"  # rarely used ASCII character
@@ -76,19 +79,36 @@ def mark_sokuon(text):
 # since sokuon is treated as tsu we must manually make it work as it is meant to
 def apply_sokuon_doubling(romaji):
     result = ""
-    i = 0
-    while i < len(romaji):
-        if romaji[i] == SOKUON_PLACEHOLDER and i + 1 < len(romaji):
+    doubling_next = False
+    space_count = 0
 
-            next_char = romaji[i + 2]
-            if result.endswith(" "):
-                result = result[:-1]
-            result += next_char
+    for char in romaji:
+        if char == SOKUON_PLACEHOLDER:
+            doubling_next = True
+            space_count = 0
+            continue 
 
-            i += 1
+        if doubling_next:
+            if char == ' ':
+                space_count += 1
+                if space_count >= 2:
+                    doubling_next = False
+                continue
+
+            if char.isalpha():
+                if space_count < 2:
+                    result = result.rstrip()
+                    result += char + char
+                else:
+                    result += char
+                doubling_next = False
+            else:
+                result += char
+                doubling_next = False
+            space_count = 0
+
         else:
-            result += romaji[i]
-        i += 1
+            result += char
 
     return result
 
@@ -118,12 +138,24 @@ def get_romaji(text):
             romaji_parts.append(romaji)
 
     romaji = " ".join(romaji_parts)
+    romaji = apply_sokuon_doubling(romaji)
     romaji = re.sub(r"\s+([.,!?])", r"\1", romaji)
     romaji = re.sub(r"\s+", " ", romaji).strip()
     romaji = apply_macrons(romaji)
     romaji = capitalize_sentence_starts(romaji)
-    romaji = apply_sokuon_doubling(romaji)
+    
     return romaji
+
+def test_sokuon_cases():
+    cases = ["がっこう", "きって", "ざっし", "まって！", "まっ！", "カップ", "カッコイイ", "一緒に行く", "切ってください", "きっ", "っ", "きっ き", "きっ  !", "きっ!き",
+             "きっ", "まって？", "あっ。", "あっ。し","きっ   て", "がっこうに行く", "きっっき", "しっぱい", "いっしょ", "とうきょうっこ", "おおっきい"]
+    
+    for jp in cases:
+        try:
+            result = get_romaji(jp)
+            print(jp, "→", result)
+        except Exception as e:
+            print(jp, "→ ERROR:", e)
 
 def create_desktop_shortcut(path_to_exe, icon_path):
     desktop = winshell.desktop()

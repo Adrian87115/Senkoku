@@ -1,5 +1,7 @@
 from PySide6.QtCore import QObject, Signal
 
+from logger import log_exceptions
+
 class TranslatorWorker(QObject):
     finished = Signal(str)
 
@@ -10,6 +12,7 @@ class TranslatorWorker(QObject):
         self.tgt = target
         self.engine = engine
 
+    @log_exceptions
     def run(self):
         if not self.text:
             self.finished.emit("")

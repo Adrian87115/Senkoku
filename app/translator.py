@@ -9,7 +9,9 @@ from google.cloud import translate_v2 as translate
 from google.oauth2 import service_account
 import html
 import numpy as np
+
 from utils import get_romaji
+from logger import log_exceptions
 
 class BaseTranslatorEngine:
     def __init__(self):
@@ -18,6 +20,7 @@ class BaseTranslatorEngine:
     def get_romaji(self, text):
         return get_romaji(text)
 
+    @log_exceptions
     def speak(self, text, lang = 'ja'):
         mp3_fp = io.BytesIO()
         tts = gTTS(text, lang = lang)
@@ -58,6 +61,7 @@ class OfficialGoogleTranslatorEngine(BaseTranslatorEngine):
         print("Official Google Translator Engine ready.\n")
 
     # after iddleness for some time the api will disconnect, this funciton is meant to reestablish the connection
+    @log_exceptions
     def reconnect(self):
         try:
             credentials = service_account.Credentials.from_service_account_file(self.key_path)
