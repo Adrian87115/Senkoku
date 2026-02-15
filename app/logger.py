@@ -33,12 +33,12 @@ def setup_logging():
     logger.info(f"Args: {sys.argv}")
 
     def log_exception(exc_type, exc_value, exc_tb):
-        logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
+        logger.error("Uncaught exception", exc_info = (exc_type, exc_value, exc_tb))
 
     sys.excepthook = log_exception
 
     def thread_exception_handler(args):
-        logger.error("Thread exception", exc_info=(args.exc_type, args.exc_value, args.exc_traceback))
+        logger.error("Thread exception", exc_info = (args.exc_type, args.exc_value, args.exc_traceback))
     threading.excepthook = thread_exception_handler
 
     return logger

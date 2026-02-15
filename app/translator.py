@@ -20,7 +20,6 @@ class BaseTranslatorEngine:
     def get_romaji(self, text):
         return get_romaji(text)
 
-    @log_exceptions
     def speak(self, text, lang = 'ja'):
         mp3_fp = io.BytesIO()
         tts = gTTS(text, lang = lang)
@@ -71,10 +70,12 @@ class OfficialGoogleTranslatorEngine(BaseTranslatorEngine):
             print(f"Failed to connect to Google Cloud: {e}")
             raise e
 
+    @log_exceptions
     def ja_to_en(self, text):
         raw_translation = self.translate_client.translate(text, source_language = 'ja', target_language = 'en')['translatedText']
         return html.unescape(raw_translation)
 
+    @log_exceptions
     def en_to_ja(self, text):
         raw_translation = self.translate_client.translate(text, source_language = 'en', target_language = 'ja')['translatedText']
         return html.unescape(raw_translation)

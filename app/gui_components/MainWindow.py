@@ -164,10 +164,12 @@ class MainWindow(QMainWindow):
         self.label_out.setStyleSheet("color: white; font-weight: bold;")
 
     # play input voice
+    @log_exceptions
     def play_input(self):
         self.play_tts(text = self.input_text.toPlainText().strip(), lang = self.source_lang, attr_name = "tts_thread_in")
 
     # play output voice
+    @log_exceptions
     def play_output(self):
         self.play_tts(text = self.output_text.toPlainText().strip(), lang = self.target_lang, attr_name = "tts_thread_out")
 

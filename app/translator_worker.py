@@ -42,5 +42,4 @@ class TranslatorWorker(QObject):
             return self.engine.ja_to_en(self.text)
         elif self.src == "en" and self.tgt == "ja":
             return self.engine.en_to_ja(self.text)
-        
         return ""

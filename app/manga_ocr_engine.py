@@ -13,7 +13,6 @@ class MangaOCREngine():
         self.manga_ocr.model.to("cpu")
         print("Manga OCR initialized.\n")
     
-    @log_exceptions
     def read_from_image(self, img):
         if not self._is_valid_image(img):
             return ""
